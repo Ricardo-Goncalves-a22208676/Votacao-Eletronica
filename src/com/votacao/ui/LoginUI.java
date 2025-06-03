@@ -1,45 +1,54 @@
 package com.votacao.ui;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import com.votacao.model.Eleitor;
+import com.votacao.service.AutenticacaoService;
+import com.votacao.model.Usuario;
+import com.votacao.utils.ValidationUtils;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import java.util.Scanner;
 
-public class LoginFX extends Application {
-    @Override
-    public void start(Stage primaryStage) {
-        Label lblUser = new Label("Username:");
-        TextField txtUser = new TextField();
-        Label lblPass = new Label("Password:");
-        PasswordField txtPass = new PasswordField();
-        Button btnLogin = new Button("Entrar");
-        Label lblMsg = new Label();
+public class LoginUI {
+    private AutenticacaoService autenticacaoService;
+    private Scanner scanner;
 
-        btnLogin.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent e) {
-                String user = txtUser.getText();
-                String pass = txtPass.getText();
-                if ("admin".equals(user) && "admin".equals(pass)) {
-                    lblMsg.setText("Login com sucesso!");
-                } else {
-                    lblMsg.setText("Credenciais inválidas.");
-                }
-            }
-        });
-
-        VBox root = new VBox(10, lblUser, txtUser, lblPass, txtPass, btnLogin, lblMsg);
-        root.setStyle("-fx-padding: 20;");
-        Scene scene = new Scene(root, 300, 200);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Login - Votação Eletrónica");
-        primaryStage.show();
+    public LoginUI() {
+        this.autenticacaoService = new AutenticacaoService();
+        this.scanner = new Scanner(System.in);
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    public void mostrarLogin() {
+        System.out.println("=== SISTEMA DE VOTAÇÃO ELETRÓNICA ===");
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+
+        if (!ValidationUtils.isNotEmpty(username)) {
+            System.out.println("O username não pode estar vazio!");
+            mostrarLogin();
+            return;
+        }
+
+        System.out.print("Password: ");
+        String password = scanner.nextLine();
+
+        if (!ValidationUtils.isNotEmpty(password)) {
+            System.out.println("A password não pode estar vazia!");
+            mostrarLogin();
+            return;
+        }
+
+        Usuario usuario = autenticacaoService.autenticar(username, password);
+
+        if (usuario != null) {
+            if (autenticacaoService.isAdministrador(usuario)) {
+                AdminUI adminUI = new AdminUI();
+                adminUI.mostrarMenu();
+            } else if (autenticacaoService.isEleitor(usuario)) {
+                EleitorUI eleitorUI = new EleitorUI((Eleitor) usuario);
+                eleitorUI.mostrarMenu();
+            }
+        } else {
+            System.out.println("Credenciais inválidas!");
+            mostrarLogin();
+        }
     }
 }
